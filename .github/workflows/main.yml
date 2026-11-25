@@ -7,6 +7,7 @@ on:
     branches: [develop, main]
 
 jobs:
+  # 1) 코드 검사: lint + 단위 테스트
   build:
     runs-on: ubuntu-latest
     steps:
@@ -27,3 +28,29 @@ jobs:
       # Jest 테스트 + 커버리지 측정
       - name: Test
         run: npm run test:coverage
+
+  # 2) 컨테이너 검사: 이미지 빌드 → MySQL과 함께 실행 → 헬스체크
+  docker:
+    needs: build   # 코드 검사를 통과해야만 실행
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image & start containers (BE + MySQL)
+        # --wait: 모든 컨테이너가 healthy가 될 때까지 기다리고, 실패하면 에러로 끝난다.
+        run: docker compose up -d --build --wait --wait-timeout 180
+
+      - name: Health check (/health, /health/ready)
+        run: |
+          curl -fsS http://localhost:3000/health
+          echo
+          curl -fsS http://localhost:3000/health/ready
+          echo
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Clean up
+        if: always()
+        run: docker compose down -v
