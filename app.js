@@ -20,6 +20,9 @@ const db = require('./database/db');
 
 const app = express();
 
+// [CI 실패 데모] 일부러 넣은 안 쓰는 변수 — ESLint no-unused-vars 에러 발생. 머지 금지!
+const unusedDemoVariable = 'CI 실패 데모';
+
 
 
 app.use(cors());
